@@ -199,7 +199,9 @@ class PubMedSearchApp:
             print('Database closed.')
         
         print('Done!')
-        
+
+if __name__ == '__main__':
+    
     try:
         if sys.argv[1] == '--license':
             print('''
