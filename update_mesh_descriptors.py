@@ -112,7 +112,7 @@ if __name__ == '__main__':
         if sys.argv[1] == '--license':
             print('''
 update_mesh_descriptors.py
-Script that creates automatic searches on PubMed.
+Script that updates MeSH Descriptors in PubMed Search Database.
 Copyright (C) 2015  Leo Andres
 
 This program is free software: you can redistribute it and/or modify

@@ -206,7 +206,7 @@ if __name__ == '__main__':
         if sys.argv[1] == '--license':
             print('''
 generate_pajek_-_mesh_terms.py
-Script that creates automatic searches on PubMed.
+Script that generates Pajek data files from PubMed Search Database.
 Copyright (C) 2015  Leo Andres
 
 This program is free software: you can redistribute it and/or modify
