@@ -203,7 +203,7 @@ class PubMedSearchApp:
     try:
         if sys.argv[1] == '--license':
             print('''
-PubMed Publications Search
+generate_pajek_-_mesh_terms.py
 Script that creates automatic searches on PubMed.
 Copyright (C) 2015  Leo Andres
 
