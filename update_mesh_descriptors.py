@@ -3,6 +3,7 @@ import searchlib.pyodbcdriver
 
 import pyodbc
 import re
+import sys
 	
 def run_mesh_update(pyodbc_conn_string):
 
