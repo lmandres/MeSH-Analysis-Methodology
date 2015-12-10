@@ -132,5 +132,5 @@ P. O. Box 3174
 Decatur, GA 30031
 lmandres@yahoo.com\n''')
     except IndexError as ie:
-	run_mesh_update('DRIVER={Microsoft Access Driver (*.mdb, *.accdb)}; DBQ=D:/justme/VirtualBox Shared Folder/CEISMC Work/CEISMC Publications SNA/pubmed_db_-_ACTSI_investigator_collaborations_-_2015-03-18.accdb;')
+	run_mesh_update('DRIVER={Microsoft Access Driver (*.mdb, *.accdb)}; DBQ=C:/path/to/database.accdb;')
 							
