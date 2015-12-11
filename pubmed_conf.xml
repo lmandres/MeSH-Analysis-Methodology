@@ -48,11 +48,6 @@
 			<EndTime>17:00</EndTime>
 		</WeekdayHours>
 		<ReturnMaximum>100000</ReturnMaximum>
-<!-- 
-		<UpdateInvestigatorIDs>yes</UpdateInvestigatorIDs>
-		<MinimumDate>2002</MinimumDate>
-		<MaximumDate>2012</MaximumDate>
--->
 		<MaximumURLLength>2000</MaximumURLLength>
 		<MaximumTries>600</MaximumTries>
 		<Timeout>60</Timeout>
@@ -69,8 +64,8 @@
 		</SearchStrategies>
 	</SearchPubMedSettings>
 	<ClassifyMeSHTermsSettings>
-		<MeSHDescriptorsFileName>desc2013.xml</MeSHDescriptorsFileName>
-		<MeSHQualifiersFileName>qual2013.xml</MeSHQualifiersFileName>
+		<MeSHDescriptorsFileName>desc2015.xml</MeSHDescriptorsFileName>
+		<MeSHQualifiersFileName>qual2015.xml</MeSHQualifiersFileName>
 		<ResetDatabaseTables>yes</ResetDatabaseTables>
 	</ClassifyMeSHTermsSettings>
 </BiblioAnalysisSettings>
