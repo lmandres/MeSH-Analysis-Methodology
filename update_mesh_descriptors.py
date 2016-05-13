@@ -35,44 +35,74 @@ class PubMedSearchApp:
         self.search_tool.set_email_address(self.search_settings.get_email_address())
         self.search_tool.set_tool_name(self.search_settings.get_search_tool_name())
 	
-	def run_mesh_update(pyodbc_conn_string):
+	def run_mesh_update():
 	
 	    xmlReadStage = 1
 	    xmlString = ''
 	    xmlStringData = ''
-		
-	    pyodbc_db = searchlib.pyodbcdriver.PubMedAccessPyODBCDatabaseController()
-	    pyodbc_db.open_database(pyodbc_conn_string)
+	    
+	    if self.search_settings.get_database_connection_type().upper() == 'SQLITE3DRIVER':
+	    	
+	    	import sqlite3
+	    	
+            try:
+                self.pubmed_database.database_manager.database_cursor.execute("DROP TABLE tbl_Mesh_Descriptor_Tree_Numbers;")
+                self.pubmed_database.database_manager.database_cursor.commit()
+                print('Dropped table: tbl_CTSA_Grant_Searches')
+            except sqlite3.OperationalError as oer:
+                if oer.args[0][:14] == 'no such table:':
+                    print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+                else:
+                    raise oer
+                
+            try:
+                self.pubmed_database.database_manager.database_cursor.execute("""
+		                                        CREATE TABLE tbl_Mesh_Descriptor_Tree_Numbers (
+                                                    Mesh_Descriptor_Tree_Number_ID INTEGER PRIMARY KEY,
+                                                    Mesh_Descriptor_ID INTEGER,
+                                                    Mesh_Descriptor_Tree_Number TEXT
+                                                );""")
+                self.pubmed_database.database_manager.database_cursor.commit()
+                print('Created table: tbl_Mesh_Descriptor_Tree_Numbers')
+            except sqlite3.ProgrammingError as per:
+                if per.args[0] == '42S01':
+                    print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+                else:
+                    raise per
+	    
+	    elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
+	    	
+	    	import pyodbc
 	            
-	    try:
-	        pyodbc_db.database_connection.execute("DROP TABLE tbl_Mesh_Descriptor_Tree_Numbers;")
-	        pyodbc_db.database_connection.commit()
-	        print('Dropped table: tbl_Mesh_Descriptor_Tree_Numbers')
-	    except pyodbc.ProgrammingError as per:
-	        if per.args[0] == '42S02':
-	            print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
-	        else:
-	            raise per
-	    except pyodbc.Error as er:
-	        if er.args[0] == 'HY109':
-	            print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
-	        else:
-	            raise er
-	        
-	    try:
-	        pyodbc_db.database_connection.execute("""
-	                                        CREATE TABLE tbl_Mesh_Descriptor_Tree_Numbers (
-	                                            Mesh_Descriptor_Tree_Number_ID COUNTER PRIMARY KEY,
-	                                            Mesh_Descriptor_ID INTEGER,
-	                                            Mesh_Descriptor_Tree_Number TEXT
-	                                        );""")
-	        pyodbc_db.database_connection.commit()
-	        print('Created table: tbl_Mesh_Descriptor_Tree_Numbers')
-	    except pyodbc.ProgrammingError as per:
-	        if per.args[0] == '42S01':
-	            print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
-	        else:
-	            raise per
+		    try:
+		        self.pubmed_database.database_manager.database_cursor.execute("DROP TABLE tbl_Mesh_Descriptor_Tree_Numbers;")
+		        self.pubmed_database.database_manager.database_cursor.commit()
+		        print('Dropped table: tbl_Mesh_Descriptor_Tree_Numbers')
+		    except pyodbc.ProgrammingError as per:
+		        if per.args[0] == '42S02':
+		            print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+		        else:
+		            raise per
+		    except pyodbc.Error as er:
+		        if er.args[0] == 'HY109':
+		            print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+		        else:
+		            raise er
+		        
+		    try:
+		        self.pubmed_database.database_manager.database_cursor.execute("""
+		                                        CREATE TABLE tbl_Mesh_Descriptor_Tree_Numbers (
+		                                            Mesh_Descriptor_Tree_Number_ID COUNTER PRIMARY KEY,
+		                                            Mesh_Descriptor_ID INTEGER,
+		                                            Mesh_Descriptor_Tree_Number TEXT
+		                                        );""")
+		        self.pubmed_database.database_manager.database_cursor.commit()
+		        print('Created table: tbl_Mesh_Descriptor_Tree_Numbers')
+		    except pyodbc.ProgrammingError as per:
+		        if per.args[0] == '42S01':
+		            print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+		        else:
+		            raise per
 	    
 	    fileIn = open('desc2015.xml', 'r')
 	
@@ -108,7 +138,7 @@ class PubMedSearchApp:
 	                    xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip() + ' = ' +
 	                    xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())
 	
-	                rows = pyodbc_db.database_connection.execute("SELECT Mesh_Descriptor_ID FROM tbl_Mesh_Descriptors WHERE Mesh_Descriptor = ?;", (
+	                rows = self.pubmed_database.database_manager.database_cursor.execute("SELECT Mesh_Descriptor_ID FROM tbl_Mesh_Descriptors WHERE Mesh_Descriptor = ?;", (
 	                    xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())).fetchall()
 	
 	                if len(rows):
@@ -119,14 +149,14 @@ class PubMedSearchApp:
 	                            
 	                            treeNumberIndex = 0
 	                            
-	                            pyodbc_db.database_connection.execute("UPDATE tbl_Mesh_Descriptors SET DescriptorUI = ? WHERE Mesh_Descriptor_ID = ?;", (
+	                            self.pubmed_database.database_manager.database_cursor.execute("UPDATE tbl_Mesh_Descriptors SET DescriptorUI = ? WHERE Mesh_Descriptor_ID = ?;", (
 	                                xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip(),
 	                                str(row[0])))
-	                            pyodbc_db.database_connection.commit()
+	                            self.pubmed_database.database_manager.database_cursor.commit()
 	
 	                            while xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>'):
 	                                
-	                                pyodbc_db.database_connection.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Numbers (Mesh_Descriptor_ID, Mesh_Descriptor_Tree_Number) VALUES (?, ?);", (
+	                                self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Numbers (Mesh_Descriptor_ID, Mesh_Descriptor_Tree_Number) VALUES (?, ?);", (
 	                                    str(row[0]),
 	                                    xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>')['character_data'][0].strip()))
 	                                
@@ -164,5 +194,5 @@ Decatur, GA 30031
 lmandres@yahoo.com\n''')
     except IndexError as ie:
         pubmed_search = PubMedSearchApp()
-        pubmed_search.run_mesh_update('DRIVER={Microsoft Access Driver (*.mdb, *.accdb)}; DBQ=C:/path/to/database.accdb;')
+        pubmed_search.run_mesh_update()
 							
