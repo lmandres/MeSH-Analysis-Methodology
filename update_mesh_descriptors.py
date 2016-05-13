@@ -71,9 +71,9 @@ class PubMedSearchApp:
                     raise per
 	    
 		elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
-
+			
 			import pyodbc
-	            
+			
 			try:
 				self.pubmed_database.database_manager.database_cursor.execute("DROP TABLE tbl_Mesh_Descriptor_Tree_Numbers;")
 				self.pubmed_database.database_manager.database_cursor.commit()
