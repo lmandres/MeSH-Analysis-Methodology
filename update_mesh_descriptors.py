@@ -45,30 +45,30 @@ class PubMedSearchApp:
 	    	
 	    	import sqlite3
 	    	
-            try:
-                self.pubmed_database.database_manager.database_cursor.execute("DROP TABLE tbl_Mesh_Descriptor_Tree_Numbers;")
-                self.pubmed_database.database_manager.database_cursor.commit()
-                print('Dropped table: tbl_CTSA_Grant_Searches')
-            except sqlite3.OperationalError as oer:
-                if oer.args[0][:14] == 'no such table:':
-                    print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
-                else:
-                    raise oer
-                
-            try:
-                self.pubmed_database.database_manager.database_cursor.execute("""
+	    try:
+	        self.pubmed_database.database_manager.database_cursor.execute("DROP TABLE tbl_Mesh_Descriptor_Tree_Numbers;")
+	        self.pubmed_database.database_manager.database_cursor.commit()
+	        print('Dropped table: tbl_CTSA_Grant_Searches')
+	    except sqlite3.OperationalError as oer:
+	        if oer.args[0][:14] == 'no such table:':
+	            print('Drop table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+	        else:
+	            raise oer
+	        
+	    try:
+	        self.pubmed_database.database_manager.database_cursor.execute("""
 		                                        CREATE TABLE tbl_Mesh_Descriptor_Tree_Numbers (
-                                                    Mesh_Descriptor_Tree_Number_ID INTEGER PRIMARY KEY,
-                                                    Mesh_Descriptor_ID INTEGER,
-                                                    Mesh_Descriptor_Tree_Number TEXT
-                                                );""")
-                self.pubmed_database.database_manager.database_cursor.commit()
-                print('Created table: tbl_Mesh_Descriptor_Tree_Numbers')
-            except sqlite3.ProgrammingError as per:
-                if per.args[0] == '42S01':
-                    print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
-                else:
-                    raise per
+	                                            Mesh_Descriptor_Tree_Number_ID INTEGER PRIMARY KEY,
+	                                            Mesh_Descriptor_ID INTEGER,
+	                                            Mesh_Descriptor_Tree_Number TEXT
+	                                        );""")
+	        self.pubmed_database.database_manager.database_cursor.commit()
+	        print('Created table: tbl_Mesh_Descriptor_Tree_Numbers')
+	    except sqlite3.ProgrammingError as per:
+	        if per.args[0] == '42S01':
+	            print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
+	        else:
+	            raise per
 	    
 	    elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
 	    	
