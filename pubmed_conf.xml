@@ -53,11 +53,11 @@
 		<Timeout>60</Timeout>
 		<UpdatePublicationResults>no</UpdatePublicationResults>
 		<SearchStrategies>
-			<PersonByPerson>no</PersonByPerson>
+			<PersonByPerson>yes</PersonByPerson>
 			<PersonOrganization>no</PersonOrganization>
 			<PersonGrant>no</PersonGrant>
 			<PersonCoauthor>no</PersonCoauthor>
-			<CTSAGrant>yes</CTSAGrant>
+			<CTSAGrant>no</CTSAGrant>
 			<PMCIDCiteByPMCID>yes</PMCIDCiteByPMCID>
 			<PubMedIDCiteByPubMedID>no</PubMedIDCiteByPubMedID>
 			<PubMedIDNeighborPubMedID>no</PubMedIDNeighborPubMedID>
