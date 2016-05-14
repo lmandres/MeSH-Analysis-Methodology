@@ -74,6 +74,67 @@ class PubMedSearchApp:
                         print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
                     else:
                         raise per
+                
+                fileIn = open('desc2015.xml', 'r')
+                        
+                xmlObject = searchlib.helper.TextXMLParser()
+                                        
+                xmlOpenRegEx = re.compile('(?!<DescriptorRecordSet.*?>)(<DescriptorRecord.*?>.*)')
+                xmlCloseRegEx = re.compile('(.*</DescriptorRecord>)')
+                        
+                for fileLine in fileIn:
+                
+                    if xmlReadStage == 1:
+                            
+                        match = xmlOpenRegEx.search(fileLine)
+                        if match:
+                            xmlString = match.group(1)
+                            xmlReadStage += 1
+                        
+                    elif xmlReadStage == 2:
+                
+                        match = xmlCloseRegEx.search(fileLine)
+                        if not match:
+                            xmlString += fileLine
+                        else:
+                                
+                            xmlString += match.group(1)
+                                                
+                            xmlObject.parse_xml_string(xmlString.encode('utf-8'))
+                            xmlStringData = xmlString
+                
+                            print(
+                                xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip() + ' = ' +
+                                xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())
+                
+                            rows = self.pubmed_database.database_manager.database_cursor.execute("SELECT Mesh_Descriptor_ID FROM tbl_Mesh_Descriptors WHERE Mesh_Descriptor = ?;", ((
+                                xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip()),)).fetchall()
+
+                            if len(rows):
+                
+                                for row in rows:
+                
+                                    if row[0]:
+                                            
+                                        treeNumberIndex = 0
+                                            
+                                        self.pubmed_database.database_manager.database_cursor.execute("UPDATE tbl_Mesh_Descriptors SET DescriptorUI = ? WHERE Mesh_Descriptor_ID = ?;", (
+                                            (xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip(),
+                                            str(row[0]))))
+                                        self.pubmed_database.database_manager.database_connection.commit()
+                
+                                        while xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>'):
+                                                
+                                            self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Numbers (Mesh_Descriptor_ID, Mesh_Descriptor_Tree_Number) VALUES (?, ?);", (
+                                                (str(row[0]),
+                                                xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>')['character_data'][0].strip())))
+                                            self.pubmed_database.database_manager.database_connection.commit()
+
+                                            treeNumberIndex += 1
+                                            
+                            xmlReadStage = 1
+                
+                fileIn.close()
 
             elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
 
@@ -108,68 +169,6 @@ class PubMedSearchApp:
                         print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
                     else:
                         raise per
-                
-            fileIn = open('desc2015.xml', 'r')
-                    
-            xmlObject = searchlib.helper.TextXMLParser()
-                                    
-            xmlOpenRegEx = re.compile('(?!<DescriptorRecordSet.*?>)(<DescriptorRecord.*?>.*)')
-            xmlCloseRegEx = re.compile('(.*</DescriptorRecord>)')
-                    
-            for fileLine in fileIn:
-            
-                    if xmlReadStage == 1:
-                        
-                        match = xmlOpenRegEx.search(fileLine)
-                        if match:
-                            xmlString = match.group(1)
-                            xmlReadStage += 1
-                    
-                        elif xmlReadStage == 2:
-            
-                            match = xmlCloseRegEx.search(fileLine)
-                            if not match:
-                                xmlString += fileLine
-                            else:
-                            
-                                xmlString += match.group(1)
-                                            
-                                httpStatus = 0
-                                            
-                                xmlObject.parse_xml_string(xmlString.encode('utf-8'))
-                                xmlStringData = xmlString
-            
-                                print(
-                                    xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip() + ' = ' +
-                                    xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())
-            
-                                rows = self.pubmed_database.database_manager.database_cursor.execute("SELECT Mesh_Descriptor_ID FROM tbl_Mesh_Descriptors WHERE Mesh_Descriptor = ?;", (
-                                    xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())).fetchall()
-
-                                if len(rows):
-            
-                                    for row in rows:
-            
-                                        if row[0]:
-                                        
-                                            treeNumberIndex = 0
-                                        
-                                            self.pubmed_database.database_manager.database_cursor.execute("UPDATE tbl_Mesh_Descriptors SET DescriptorUI = ? WHERE Mesh_Descriptor_ID = ?;", (
-                                                xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip(),
-                                                str(row[0])))
-                                            self.pubmed_database.database_manager.database_cursor.commit()
-            
-                                            while xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>'):
-                                            
-                                                self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Numbers (Mesh_Descriptor_ID, Mesh_Descriptor_Tree_Number) VALUES (?, ?);", (
-                                                    str(row[0]),
-                                                    xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>')['character_data'][0].strip()))
-
-                                                treeNumberIndex += 1
-                                        
-                            xmlReadStage = 1
-            
-            fileIn.close()
 
 if __name__ == '__main__':
     
