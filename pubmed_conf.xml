@@ -45,7 +45,7 @@
 		<HTTPDelay>1</HTTPDelay>
 		<WeekdayHours>
 			<StartTime>9:00</StartTime>
-			<EndTime>17:00</EndTime>
+			<EndTime>9:00</EndTime>
 		</WeekdayHours>
 		<ReturnMaximum>100000</ReturnMaximum>
 		<MaximumURLLength>2000</MaximumURLLength>
@@ -68,4 +68,7 @@
 		<MeSHQualifiersFileName>qual2015.xml</MeSHQualifiersFileName>
 		<ResetDatabaseTables>yes</ResetDatabaseTables>
 	</ClassifyMeSHTermsSettings>
+	<GeneratePajekMeSHTermsSettings>
+		<FileNameRoot>one_mode_-_mesh_terms_-_</FileNameRoot>
+	</GeneratePajekMeSHTermsSettings>
 </BiblioAnalysisSettings>
