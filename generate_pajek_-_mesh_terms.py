@@ -37,31 +37,57 @@ class PubMedSearchApp:
     
     def run_generate_pajek(self):
 
-        fileName = 'actsi_one_mode_-_mesh_terms_-_'
+        fileName = self.search_settings.search_settings.get_string_cdata('<BiblioAnalysisSettings><GeneratePajekMeSHTermsSettings><FileNameRoot>').strip()
         
         if self.pubmed_database.open_database():
                 
             print('Database opened.')
 
-            fromClause = """
-                FROM ((((((((
-                    tbl_Publication_Mesh_Terms pmt_1 INNER JOIN tbl_Mesh_Descriptor_Tree_Numbers mdtn_1 ON
-                        pmt_1.Mesh_Descriptor_ID = mdtn_1.Mesh_Descriptor_ID)
-                    INNER JOIN tbl_Mesh_Descriptors tmd_1 ON
-                        pmt_1.Mesh_Descriptor_ID = tmd_1.Mesh_Descriptor_ID)
-                    INNER JOIN xls_Mesh_Descriptor_Tree_Categories mdtc_1 ON
-                        LEFT(mdtn_1.Mesh_Descriptor_Tree_Number, 1) = mdtc_1.Mesh_Descriptor_Tree_Category)
-                    INNER JOIN tbl_Publication_Mesh_Terms pmt_2 ON
-                        pmt_1.Publication_ID = pmt_2.Publication_ID)
-                    INNER JOIN tbl_Mesh_Descriptor_Tree_Numbers mdtn_2 ON
-                        pmt_2.Mesh_Descriptor_ID = mdtn_2.Mesh_Descriptor_ID)
-                    INNER JOIN tbl_Mesh_Descriptors tmd_2 ON
-                        pmt_2.Mesh_Descriptor_ID = tmd_2.Mesh_Descriptor_ID)
-                    INNER JOIN xls_Mesh_Descriptor_Tree_Categories mdtc_2 ON
-                        LEFT(mdtn_2.Mesh_Descriptor_Tree_Number, 1) = mdtc_2.Mesh_Descriptor_Tree_Category)
-                    INNER JOIN tbl_PubMed_Publications pmp_1 ON
-                        pmt_1.Publication_ID = pmp_1.Publication_ID)
-            """
+            fromClause = ''
+                
+            if self.search_settings.get_database_connection_type().upper() == 'SQLITE3DRIVER':
+
+                fromClause = """
+                    FROM
+                        tbl_Publication_Mesh_Terms pmt_1 INNER JOIN tbl_Mesh_Descriptor_Tree_Numbers mdtn_1 ON
+                            pmt_1.Mesh_Descriptor_ID = mdtn_1.Mesh_Descriptor_ID
+                        INNER JOIN tbl_Mesh_Descriptors tmd_1 ON
+                            pmt_1.Mesh_Descriptor_ID = tmd_1.Mesh_Descriptor_ID
+                        INNER JOIN tbl_Mesh_Descriptor_Tree_Categories mdtc_1 ON
+                            substr(mdtn_1.Mesh_Descriptor_Tree_Number, 1, 1) = mdtc_1.Mesh_Descriptor_Tree_Category
+                        INNER JOIN tbl_Publication_Mesh_Terms pmt_2 ON
+                            pmt_1.Publication_ID = pmt_2.Publication_ID
+                        INNER JOIN tbl_Mesh_Descriptor_Tree_Numbers mdtn_2 ON
+                            pmt_2.Mesh_Descriptor_ID = mdtn_2.Mesh_Descriptor_ID
+                        INNER JOIN tbl_Mesh_Descriptors tmd_2 ON
+                            pmt_2.Mesh_Descriptor_ID = tmd_2.Mesh_Descriptor_ID
+                        INNER JOIN tbl_Mesh_Descriptor_Tree_Categories mdtc_2 ON
+                            substr(mdtn_2.Mesh_Descriptor_Tree_Number, 1, 1) = mdtc_2.Mesh_Descriptor_Tree_Category
+                        INNER JOIN tbl_PubMed_Publications pmp_1 ON
+                            pmt_1.Publication_ID = pmp_1.Publication_ID
+                """
+
+            elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
+
+                fromClause = """
+                    FROM ((((((((
+                        tbl_Publication_Mesh_Terms pmt_1 INNER JOIN tbl_Mesh_Descriptor_Tree_Numbers mdtn_1 ON
+                            pmt_1.Mesh_Descriptor_ID = mdtn_1.Mesh_Descriptor_ID)
+                        INNER JOIN tbl_Mesh_Descriptors tmd_1 ON
+                            pmt_1.Mesh_Descriptor_ID = tmd_1.Mesh_Descriptor_ID)
+                        INNER JOIN tbl_Mesh_Descriptor_Tree_Categories mdtc_1 ON
+                            LEFT(mdtn_1.Mesh_Descriptor_Tree_Number, 1) = mdtc_1.Mesh_Descriptor_Tree_Category)
+                        INNER JOIN tbl_Publication_Mesh_Terms pmt_2 ON
+                            pmt_1.Publication_ID = pmt_2.Publication_ID)
+                        INNER JOIN tbl_Mesh_Descriptor_Tree_Numbers mdtn_2 ON
+                            pmt_2.Mesh_Descriptor_ID = mdtn_2.Mesh_Descriptor_ID)
+                        INNER JOIN tbl_Mesh_Descriptors tmd_2 ON
+                            pmt_2.Mesh_Descriptor_ID = tmd_2.Mesh_Descriptor_ID)
+                        INNER JOIN tbl_Mesh_Descriptor_Tree_Categories mdtc_2 ON
+                            LEFT(mdtn_2.Mesh_Descriptor_Tree_Number, 1) = mdtc_2.Mesh_Descriptor_Tree_Category)
+                        INNER JOIN tbl_PubMed_Publications pmp_1 ON
+                            pmt_1.Publication_ID = pmp_1.Publication_ID)
+                """
 
             yearSQLQuery = """
                 SELECT DISTINCT sq_1.Publish_Year
@@ -103,7 +129,7 @@ class PubMedSearchApp:
             meshDescriptorTreeDescriptionList.append(None)
             
             for yearRow in self.pubmed_database.database_manager.run_sql_query(yearSQLQuery):
-                publishYearList.append(yearRow.Publish_Year)
+                publishYearList.append(yearRow[0])
 
             for yearItem in publishYearList:
 
@@ -115,14 +141,14 @@ class PubMedSearchApp:
                 row = self.pubmed_database.database_manager.database_cursor.execute("""
                     SELECT COUNT(*) AS Vertex_Count
                     FROM (
-                    SELECT DISTINCT sq_1.Mesh_Descriptor, sq_1.Mesh_Descriptor_Tree_Category_Description
-                    FROM (""" + vertexSQLQuery + """)) AS sq_1_1
+                    SELECT DISTINCT sq_1_1.Mesh_Descriptor, sq_1_1.Mesh_Descriptor_Tree_Category_Description
+                    FROM (""" + vertexSQLQuery + """) AS sq_1_1) AS sq_1_1_1
                     ;
-                """, (str(yearItem))).fetchone()
+                """, (str(yearItem),)).fetchone()
                 
                 if row:
                     
-                    vertexCount = row.Vertex_Count
+                    vertexCount = row[0]
                     
                     print('Vertex count = ' + str(vertexCount))
                     fileOut.write('*Vertices ' + str(vertexCount) + '\n')
@@ -136,20 +162,20 @@ class PubMedSearchApp:
                     FROM (""" + vertexSQLQuery + """) sq_1_1
                     GROUP BY sq_1_1.Mesh_Descriptor, sq_1_1.Mesh_Descriptor_Tree_Category_Description
                     ;
-                """, (str(yearItem)))
+                """, (str(yearItem),))
                 print('Writing vertices . . .')
                 for row in cursor:
 
-                    rowString =  row.Mesh_Descriptor_Tree_Category_Description.strip() + ' > ' + row.Mesh_Descriptor.strip()
+                    rowString =  row[1].strip() + ' > ' + row[0].strip()
                             
                     rowIndex += 1
                     vertexKeys.append(rowString)
                         
                     vertexDictionaries[rowString] = {}
                     vertexDictionaries[rowString]['vertexIndex'] = rowIndex
-                    vertexDictionaries[rowString]['vertexCount'] = row.Vertex_Count
-                    vertexDictionaries[rowString]['meshDescriptor'] = row.Mesh_Descriptor.strip()
-                    vertexDictionaries[rowString]['meshDescriptorTreeDescription'] = row.Mesh_Descriptor_Tree_Category_Description.strip()
+                    vertexDictionaries[rowString]['vertexCount'] = row[2]
+                    vertexDictionaries[rowString]['meshDescriptor'] = row[0].strip()
+                    vertexDictionaries[rowString]['meshDescriptorTreeDescription'] = row[1].strip()
                         
                     fileOut.write(str(vertexDictionaries[rowString]['vertexIndex']) + ' "' + rowString + '"\n')
 
@@ -161,15 +187,15 @@ class PubMedSearchApp:
                     FROM (""" + edgeSQLQuery + """) sq_1_1
                     GROUP BY sq_1_1.Mesh_Descriptor_1, sq_1_1.Mesh_Descriptor_Tree_Category_Description_1, sq_1_1.Mesh_Descriptor_2, sq_1_1.Mesh_Descriptor_Tree_Category_Description_2
                     ;
-                """, (str(yearItem)))
+                """, (str(yearItem),))
                 print('Writing edges . . .')
                 for row in cursor:
 
-                    rowString_1 = row.Mesh_Descriptor_Tree_Category_Description_1.strip() + ' > ' + row.Mesh_Descriptor_1.strip()
-                    rowString_2 = row.Mesh_Descriptor_Tree_Category_Description_2.strip() + ' > ' + row.Mesh_Descriptor_2.strip()
+                    rowString_1 = row[1].strip() + ' > ' + row[0].strip()
+                    rowString_2 = row[3].strip() + ' > ' + row[2].strip()
 
                     if rowString_1 and rowString_2:
-                        fileOut.write(str(vertexDictionaries[rowString_1]['vertexIndex']) + ' ' + str(vertexDictionaries[rowString_2]['vertexIndex']) + ' ' + str(row.Edge_Count) + '\n')
+                        fileOut.write(str(vertexDictionaries[rowString_1]['vertexIndex']) + ' ' + str(vertexDictionaries[rowString_2]['vertexIndex']) + ' ' + str(row[4]) + '\n')
                         
                 fileOut.close()
 

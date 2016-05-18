@@ -62,7 +62,7 @@ class PubMedSearchApp:
                     
                 try:
                     self.pubmed_database.database_manager.database_cursor.execute("""
-                                                            CREATE TABLE tbl_Mesh_Descriptor_Tree_Numbers (
+                                                    CREATE TABLE tbl_Mesh_Descriptor_Tree_Numbers (
                                                         Mesh_Descriptor_Tree_Number_ID INTEGER PRIMARY KEY,
                                                         Mesh_Descriptor_ID INTEGER,
                                                         Mesh_Descriptor_Tree_Number TEXT
@@ -74,8 +74,38 @@ class PubMedSearchApp:
                         print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
                     else:
                         raise per
+                    
+                try:
+                    
+                    self.pubmed_database.database_manager.database_cursor.execute("""
+                                                    CREATE TABLE tbl_Mesh_Descriptor_Tree_Categories (
+                                                        Mesh_Descriptor_Tree_Category_ID INTEGER PRIMARY KEY,
+                                                        Mesh_Descriptor_Tree_Category TEXT,
+                                                        Mesh_Descriptor_Tree_Category_Description TEXT
+                                                    );""")
+                    self.pubmed_database.database_manager.database_connection.commit()
+                    print('Created table: tbl_Mesh_Descriptor_Tree_Categories')
+
+                    fileIn = open('meshDescriptorTreeCategories.txt', 'r')
+                    for fileLine in fileIn:
+                        
+                        lineArray = fileLine.strip().split('\t')
+                        self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Categories (Mesh_Descriptor_Tree_Category, Mesh_Descriptor_Tree_Category_Description) VALUES (?, ?);",
+                            (lineArray[0].strip(),
+                             lineArray[1].strip()))
+                        self.pubmed_database.database_manager.database_connection.commit()
+                            
+                    fileIn.close()
+                        
+                except sqlite3.ProgrammingError as per:
+                    if per.args[0] == '42S01':
+                        print('Create table skipped: tbl_Mesh_Descriptor_Tree_Categories')
+                    else:
+                        raise per
+                except sqlite3.OperationalError as oer:
+                    print('Create table skipped: tbl_Mesh_Descriptor_Tree_Categories')
                 
-                fileIn = open('desc2015.xml', 'r')
+                fileIn = open(self.search_settings.search_settings.get_string_cdata('<BiblioAnalysisSettings><ClassifyMeSHTermsSettings><MeSHDescriptorsFileName>').strip(), 'r')
                         
                 xmlObject = searchlib.helper.TextXMLParser()
                                         
@@ -169,6 +199,11 @@ class PubMedSearchApp:
                         print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
                     else:
                         raise per
+            
+            if self.pubmed_database.close_database():
+                print('Closed database.')
+
+            print('Done!')
 
 if __name__ == '__main__':
     
