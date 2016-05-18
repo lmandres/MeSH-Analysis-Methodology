@@ -1,0 +1,19 @@
+A	Anatomy
+E	Analytical, Diagnostic and Therapeutic Techniques and Equipment
+I	Anthropology, Education, Sociology and Social Phenomena
+X	Check Tags
+D	Chemicals and Drugs
+H	Disciplines and Occupations
+C	Diseases
+Z	Geographical Locations
+N	Health Care
+K	Humanities
+L	Information Science
+B	Organisms
+M	Persons
+R	Pharmacological Actions
+G	Phenomena and Processes
+F	Psychiatry and Psychology
+V	Publication Type
+Y	Subheadings
+J	Technology and Food and Beverages
