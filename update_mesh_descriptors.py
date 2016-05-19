@@ -104,67 +104,6 @@ class PubMedSearchApp:
                         raise per
                 except sqlite3.OperationalError as oer:
                     print('Create table skipped: tbl_Mesh_Descriptor_Tree_Categories')
-                
-                fileIn = open(self.search_settings.search_settings.get_string_cdata('<BiblioAnalysisSettings><ClassifyMeSHTermsSettings><MeSHDescriptorsFileName>').strip(), 'r')
-                        
-                xmlObject = searchlib.helper.TextXMLParser()
-                                        
-                xmlOpenRegEx = re.compile('(?!<DescriptorRecordSet.*?>)(<DescriptorRecord.*?>.*)')
-                xmlCloseRegEx = re.compile('(.*</DescriptorRecord>)')
-                        
-                for fileLine in fileIn:
-                
-                    if xmlReadStage == 1:
-                            
-                        match = xmlOpenRegEx.search(fileLine)
-                        if match:
-                            xmlString = match.group(1)
-                            xmlReadStage += 1
-                        
-                    elif xmlReadStage == 2:
-                
-                        match = xmlCloseRegEx.search(fileLine)
-                        if not match:
-                            xmlString += fileLine
-                        else:
-                                
-                            xmlString += match.group(1)
-                                                
-                            xmlObject.parse_xml_string(xmlString.encode('utf-8'))
-                            xmlStringData = xmlString
-                
-                            print(
-                                xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip() + ' = ' +
-                                xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())
-                
-                            rows = self.pubmed_database.database_manager.database_cursor.execute("SELECT Mesh_Descriptor_ID FROM tbl_Mesh_Descriptors WHERE Mesh_Descriptor = ?;", ((
-                                xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip()),)).fetchall()
-
-                            if len(rows):
-                
-                                for row in rows:
-                
-                                    if row[0]:
-                                            
-                                        treeNumberIndex = 0
-                                            
-                                        self.pubmed_database.database_manager.database_cursor.execute("UPDATE tbl_Mesh_Descriptors SET DescriptorUI = ? WHERE Mesh_Descriptor_ID = ?;", (
-                                            (xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip(),
-                                            str(row[0]))))
-                                        self.pubmed_database.database_manager.database_connection.commit()
-                
-                                        while xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>'):
-                                                
-                                            self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Numbers (Mesh_Descriptor_ID, Mesh_Descriptor_Tree_Number) VALUES (?, ?);", (
-                                                (str(row[0]),
-                                                xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>')['character_data'][0].strip())))
-                                            self.pubmed_database.database_manager.database_connection.commit()
-
-                                            treeNumberIndex += 1
-                                            
-                            xmlReadStage = 1
-                
-                fileIn.close()
 
             elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
 
@@ -199,11 +138,107 @@ class PubMedSearchApp:
                         print('Create table skipped: tbl_Mesh_Descriptor_Tree_Numbers')
                     else:
                         raise per
-            
-            if self.pubmed_database.close_database():
-                print('Closed database.')
+                    
+                try:
+                    
+                    self.pubmed_database.database_manager.database_cursor.execute("""
+                                                    CREATE TABLE tbl_Mesh_Descriptor_Tree_Categories (
+                                                        Mesh_Descriptor_Tree_Category_ID COUNTER PRIMARY KEY,
+                                                        Mesh_Descriptor_Tree_Category TEXT,
+                                                        Mesh_Descriptor_Tree_Category_Description TEXT
+                                                    );""")
+                    self.pubmed_database.database_manager.database_cursor.commit()
+                    print('Created table: tbl_Mesh_Descriptor_Tree_Categories')
 
-            print('Done!')
+                    fileIn = open('meshDescriptorTreeCategories.txt', 'r')
+                    for fileLine in fileIn:
+                        
+                        lineArray = fileLine.strip().split('\t')
+                        self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Categories (Mesh_Descriptor_Tree_Category, Mesh_Descriptor_Tree_Category_Description) VALUES (?, ?);",
+                            (lineArray[0].strip(),
+                            lineArray[1].strip()))
+                        self.pubmed_database.database_manager.database_cursor.commit()
+                            
+                    fileIn.close()
+                        
+                except pyodbc.ProgrammingError as per:
+                    if per.args[0] == '42S01':
+                        print('Create table skipped: tbl_Mesh_Descriptor_Tree_Categories')
+                    else:
+                        raise per
+            
+            xmlObject = searchlib.helper.TextXMLParser()
+                                        
+            xmlOpenRegEx = re.compile('(?!<DescriptorRecordSet.*?>)(<DescriptorRecord.*?>.*)')
+            xmlCloseRegEx = re.compile('(.*</DescriptorRecord>)')
+            
+            fileIn = open(self.search_settings.search_settings.get_string_cdata('<BiblioAnalysisSettings><ClassifyMeSHTermsSettings><MeSHDescriptorsFileName>').strip(), 'r')   
+            for fileLine in fileIn:
+                
+                if xmlReadStage == 1:
+                            
+                    match = xmlOpenRegEx.search(fileLine)
+                    if match:
+                        xmlString = match.group(1)
+                        xmlReadStage += 1
+                        
+                elif xmlReadStage == 2:
+                
+                    match = xmlCloseRegEx.search(fileLine)
+                    if not match:
+                        xmlString += fileLine
+                    else:
+                                
+                        xmlString += match.group(1)
+                                                
+                        xmlObject.parse_xml_string(xmlString.encode('utf-8'))
+                        xmlStringData = xmlString
+                
+                        print(
+                            xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip() + ' = ' +
+                            xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip())
+                
+                        rows = self.pubmed_database.database_manager.database_cursor.execute("SELECT Mesh_Descriptor_ID FROM tbl_Mesh_Descriptors WHERE Mesh_Descriptor = ?;", ((
+                            xmlObject.get_element_item('<DescriptorRecord><DescriptorName><String>')['character_data'][0].strip()),)).fetchall()
+
+                        if len(rows):
+                
+                            for row in rows:
+                
+                                if row[0]:
+                                            
+                                    treeNumberIndex = 0
+                                            
+                                    self.pubmed_database.database_manager.database_cursor.execute("UPDATE tbl_Mesh_Descriptors SET DescriptorUI = ? WHERE Mesh_Descriptor_ID = ?;", (
+                                        (xmlObject.get_element_item('<DescriptorRecord><DescriptorUI>')['character_data'][0].strip(),
+                                        str(row[0]))))
+                                        
+                                    if self.search_settings.get_database_connection_type().upper() == 'SQLITE3DRIVER':
+                                        self.pubmed_database.database_manager.database_cursor.commit()
+                                    elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
+                                        self.pubmed_database.database_manager.database_connection.commit()
+                
+                                    while xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>'):
+                                            
+                                        self.pubmed_database.database_manager.database_cursor.execute("INSERT INTO tbl_Mesh_Descriptor_Tree_Numbers (Mesh_Descriptor_ID, Mesh_Descriptor_Tree_Number) VALUES (?, ?);", (
+                                            (str(row[0]),
+                                            xmlObject.get_element_item('<DescriptorRecord><TreeNumberList><TreeNumber<' + str(treeNumberIndex).strip() + '>>')['character_data'][0].strip()))) 
+                                        
+                                        if self.search_settings.get_database_connection_type().upper() == 'SQLITE3DRIVER':
+                                            self.pubmed_database.database_manager.database_cursor.commit()
+                                        elif self.search_settings.get_database_connection_type().upper() == 'PYODBCDRIVER':
+                                            self.pubmed_database.database_manager.database_connection.commit()
+
+                                        treeNumberIndex += 1
+                                            
+                        xmlReadStage = 1
+                
+            fileIn.close()
+            
+        if self.pubmed_database.close_database():
+            print('Closed database.')
+
+        print('Done!')
 
 if __name__ == '__main__':
     
