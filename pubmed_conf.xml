@@ -70,5 +70,7 @@
 	</ClassifyMeSHTermsSettings>
 	<GeneratePajekMeSHTermsSettings>
 		<FileNameRoot>one_mode_-_mesh_terms_-_</FileNameRoot>
+		<AnalysisStartYear>2007</AnalysisStartYear>
+		<AnalysisEndYear>2015</AnalysisEndYear>
 	</GeneratePajekMeSHTermsSettings>
 </BiblioAnalysisSettings>
